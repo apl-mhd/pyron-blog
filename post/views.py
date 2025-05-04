@@ -1,17 +1,27 @@
-from django.shortcuts import render
-from django.http import HttpResponse
 from .serializers import PostSerializer
 from .models import Post
+from accounts.permissions import IsOwner
+from django.shortcuts import render
+from django.http import HttpResponse
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework import viewsets
 
 # Create your views here.
 
 
+class PostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [IsOwner]
+
+
 class PostAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = PostSerializer(data=request.data)
@@ -19,13 +29,14 @@ class PostAPIView(APIView):
             serializer.save(author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def get(self, request):
-        posts = Post.objects.all()
-        serializer = PostSerializer(posts, many=True)
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
-
 
 class PostListAPIView(ListAPIView):
+    model = Post
+    serializer_class = PostSerializer
+    queryset = Post.objects.all()
+
+
+class PostRetrieveAPIView(APIView):
     model = Post
     serializer_class = PostSerializer
     queryset = Post.objects.all()
@@ -35,9 +46,10 @@ class PostUpdateAPIView(UpdateAPIView):
     serializer_class = PostSerializer
     queryset = Post.objects.all()
 
+    permission_classes = [IsAuthenticated, IsOwner]
+
 
 class PostDeleteAPIView(DestroyAPIView):
-    model = Post
     serializer_class = PostSerializer
     queryset = Post.objects.all()
 
