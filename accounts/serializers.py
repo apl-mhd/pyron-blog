@@ -28,5 +28,4 @@ class UserSerializer(serializers.ModelSerializer):
         )
         user.set_password(validated_data['password'])
         user.save()
-        user.is_staff = True
         return user
