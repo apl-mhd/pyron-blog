@@ -84,9 +84,9 @@ class PostRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         self.perform_update(serializer)
 
         try:
-
-            if serializer.validated_data['image'] and perv_image.path and os.path.exists(perv_image.path):
-                os.remove(perv_image.path)
+            if serializer.validated_data.get('image') and perv_image:
+                if os.path.exists(perv_image.path):
+                    os.remove(perv_image.path)
         except Exception as e:
             print(f"Error deleting old image: {e}")
 
