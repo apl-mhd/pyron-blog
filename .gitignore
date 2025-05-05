@@ -2,4 +2,5 @@
 __pycache__/
 
 venv
-media/
+media/images/posts/
+db.sqlite3
