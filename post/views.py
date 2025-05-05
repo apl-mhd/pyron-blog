@@ -1,79 +1,98 @@
 from .serializers import PostSerializer
 from .models import Post
 from accounts.permissions import IsOwner
-from django.shortcuts import render
-from django.http import HttpResponse
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from django.db.models import Q
+import os
 from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.pagination import LimitOffsetPagination
 
 # Create your views here.
 
 
-class PostViewSet(viewsets.ModelViewSet):
+class CustomLimitOffsetPagination(LimitOffsetPagination):
+    default_limit = 10
+    max_limit = 1000
+
+    def get_paginated_response(self, data):
+        return Response({
+            'total': self.count,
+            'next': self.get_next_link(),
+            'previous': self.get_previous_link(),
+            'data': data
+        })
+
+
+class PostListCreateAPIView(ListCreateAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = [IsOwner]
+    pagination_class = CustomLimitOffsetPagination  # LimitOffsetPagination
+    permission_classes = [AllowAny, IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Post.objects.all()
+
+        title = self.request.query_params.get("title", "")
+        content = self.request.query_params.get("content", "")
+
+        if title and content:
+            queryset = queryset.filter(Q(title__icontains=title)
+                                 | Q(content__icontains=content))
+        elif title:
+            queryset = queryset.filter(title__icontains=title)
+        elif content:
+            queryset = queryset.filter(content__icontains=content)
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
 
 
-class PostAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serializer = PostSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(author=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-class PostListAPIView(ListAPIView):
-    model = Post
-    serializer_class = PostSerializer
+class PostRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.all()
-
-
-class PostRetrieveAPIView(APIView):
-    model = Post
     serializer_class = PostSerializer
-    queryset = Post.objects.all()
-
-
-class PostUpdateAPIView(UpdateAPIView):
-    serializer_class = PostSerializer
-    queryset = Post.objects.all()
-
     permission_classes = [IsAuthenticated, IsOwner]
 
+    def update(self, request, *args, **kwargs):
+        isinstance = self.get_object()
+        perv_image = isinstance.image
 
-class PostDeleteAPIView(DestroyAPIView):
-    serializer_class = PostSerializer
-    queryset = Post.objects.all()
+        serializer = self.get_serializer(
+            instance=isinstance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
 
+        try:
 
-@api_view(['GET'])
-def index(request):
+            if serializer.validated_data['image'] and perv_image.path and os.path.exists(perv_image.path):
+                os.remove(perv_image.path)
+        except Exception as e:
+            print(f"Error deleting old image: {e}")
 
-    posts = Post.objects.all()
-    serializer = PostSerializer(posts, many=True)
+        return Response(data={"message": "Post Updated Successfully", "data": serializer.data}, status=status.HTTP_200_OK)
 
-    return Response(data=serializer.data, status=status.HTTP_200_OK)
+    def delete(self, request, pk=None):
+        isinstance = self.get_object()
+        image_path = isinstance.image
+        isinstance.delete()
 
+        try:
+            if image_path and os.path.exists(image_path.path):
+                os.remove(image_path.path)
+        except Exception as e:
+            print(f"Error deleting image: {e}")
 
-@api_view(['POST'])
-def create(request):
+        return Response(data={"message": "Post Deleted Successfully"}, status=status.HTTP_204_NO_CONTENT)
 
-    serializer = PostSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(author=request.user)
-        # print(type(request.data))
-        # print(type(serializer.validated_data))
-        # serializer.save(**request.data, author=request.user)
-        # serializer.save(author=request.user, title="no title")
-        # serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    else:
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_permissions(self):
+        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
+            return [IsAuthenticated(), IsOwner()]
+        return [AllowAny()]

@@ -3,12 +3,7 @@ from .import views
 
 
 urlpatterns = [
-    path('', views.PostListAPIView.as_view(), name='index'),
-    path('create/', views.PostAPIView.as_view(), name='api_post_create'),
-    #     path('<int:pk>/', views.PostRetrieveAPIView.as_view(),
-    #          name='api_post_retrive'),
-    path('<int:pk>/', views.PostUpdateAPIView.as_view(),
-         name='api_post_update'),
-    path('delete/<int:pk>/', views.PostDeleteAPIView.as_view(),
-         name='api_post_delete'),
+    path('', views.PostListCreateAPIView.as_view(), name='api_posts_list_create'),
+    path('<int:pk>/', views.PostRetrieveUpdateDestroyAPIView.as_view(),
+         name='api_posts_retrieve_update_destroy'),
 ]
