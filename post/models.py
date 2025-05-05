@@ -9,9 +9,11 @@ class Post(models.Model):
     '''Model for blog posts.'''
     title = models.CharField(max_length=255)
     content = models.TextField()
-    author = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)   
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True)
+    image = models.ImageField(upload_to='images/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title[0:50]}... by {self.author.username}"
+        return f"{self.title[0:50]}... by {self.author}"
