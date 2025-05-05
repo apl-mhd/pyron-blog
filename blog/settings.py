@@ -78,11 +78,11 @@ WSGI_APPLICATION = 'blog.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'pyron_blog',     # Database name
-        'USER': 'postgres',     # PostgreSQL user
-        'PASSWORD': 'admin', # Password for the user
-        'HOST': 'localhost',              # Or IP address if remote
-        'PORT': '5432',                   # Default PostgreSQL port
+        'NAME': 'pyron_blog',  # database name
+        'USER': 'postgres',
+        'PASSWORD': 'admin',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
@@ -111,7 +111,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Dhaka'
 
 USE_I18N = True
 
@@ -134,5 +134,5 @@ SIMPLE_JWT = {
 }
 
 
-MEDIA_URL = "/meida/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

@@ -34,12 +34,13 @@ class PostListCreateAPIView(ListCreateAPIView):
     def get_queryset(self):
         queryset = Post.objects.all()
 
+        #  /posts/id/?title=some_title&content=some_content
         title = self.request.query_params.get("title", "")
         content = self.request.query_params.get("content", "")
 
         if title and content:
             queryset = queryset.filter(Q(title__icontains=title)
-                                 | Q(content__icontains=content))
+                                       | Q(content__icontains=content))
         elif title:
             queryset = queryset.filter(title__icontains=title)
         elif content:
@@ -60,6 +61,18 @@ class PostRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated, IsOwner]
+
+    def get_object(self):
+        try:
+            post = super().get_object()
+            image = post.image
+
+            # Check if the image exists on the storage, if not set a default image
+            if image and not os.path.exists(image.path):
+                post.image = '/images/default_not_found.jpeg'
+            return post
+        except Post.DoesNotExist:
+            return Response(data={"message": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
 
     def update(self, request, *args, **kwargs):
         isinstance = self.get_object()
