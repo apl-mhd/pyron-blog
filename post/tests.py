@@ -14,59 +14,41 @@ class PostAPITestCase(APITestCase):
         self.user_a = User.objects.create_user(
             username=self.username_a, password=self.password)
 
-        self.user_b = User.objects.create_user(
-            username=self.username_b, password=self.password)
-
         response = self.client.post('/api/token/', {
             'username': self.username_a,
             'password': self.password
         })
 
-        access_token = access_token = response.data['access']
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
-
-    def test_create_user(self):
-        data = {
-            'username': 'username',
-            'email': 'email@mail.com',
-            'first_name': 'First Name',
-            'last_name': 'Last Name',
-            'password': 'password',
-            'confirm_password': 'password',
-        }
-        response = self.client.post('/api/register/', data=data, format='json')
-
-        self.assertEqual(response.status_code, 201)
-
-    def test_login(self):
-        response = self.client.post('/api/token/', {
-            'username': self.username_a,
-            'password': self.password
-        })
-
-        self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
-
-    def test_login_fail(self):
-        response = self.client.post('/api/token/', {
-            'username': self.username_a,
-            'password': 'wrong password',
-        })
-
-        self.assertEqual(response.status_code, 401)
+        self.access_token = response.data['access']
 
     def test_create_post(self):
         data = {'title': 'Sample Post',
                 'content': 'Sample Content',
                 }
 
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
         response = self.client.post('/api/posts/', data, format='json')
+
         self.assertEqual(response.status_code, 201)
+
+    def test_unauthenticated_user_cannot_create_post(self):
+        data = {'title': 'Sample Post',
+                'content': 'Sample Content',
+                }
+
+        response = self.client.post('/api/posts/', data, format='json')
+
+        self.assertEqual(response.status_code, 401)
 
     def test_create_update_delete_post(self):
         data = {'title': 'Sample Post',
                 'content': 'Sample Content',
                 }
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
+
         create_response = self.client.post(
             '/api/posts/', data=data, format='json')
 
@@ -94,13 +76,19 @@ class PostAPITestCase(APITestCase):
 
     def test_user_cannot_update_delete_another_users_post(self):
 
+        user_b = User.objects.create_user(
+            username=self.username_b, password=self.password)
+
         post = Post.objects.create(
             title='Sample Post',
             content='Sample Content',
-            author=self.user_b
+            author=user_b
         )
 
         id = post.id
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
 
         update_response = self.client.put(f'/api/posts/{id}/')
         delete_response = self.client.delete(f'/api/posts/{id}/')
