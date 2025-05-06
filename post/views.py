@@ -5,8 +5,9 @@ from django.db.models import Q
 import os
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.generics import (
+    ListCreateAPIView, RetrieveUpdateDestroyAPIView)
+from rest_framework.permissions import (AllowAny, IsAuthenticated)
 from rest_framework.pagination import LimitOffsetPagination
 
 # Create your views here.
@@ -67,12 +68,14 @@ class PostRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
             post = super().get_object()
             image = post.image
 
-            # Check if the image exists on the storage, if not set a default image
+            # Check if the image exists on the storage,
+            #  if not set a default image
             if image and not os.path.exists(image.path):
                 post.image = '/images/default_not_found.jpeg'
             return post
         except Post.DoesNotExist:
-            return Response(data={"message": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(data={"message": "Post not found"},
+                            status=status.HTTP_404_NOT_FOUND)
 
     def update(self, request, *args, **kwargs):
         isinstance = self.get_object()
@@ -90,7 +93,9 @@ class PostRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         except Exception as e:
             print(f"Error deleting old image: {e}")
 
-        return Response(data={"message": "Post Updated Successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response(data={"message": "Post Updated Successfully",
+                              "data": serializer.data},
+                        status=status.HTTP_200_OK)
 
     def delete(self, request, pk=None):
         isinstance = self.get_object()
@@ -103,7 +108,8 @@ class PostRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         except Exception as e:
             print(f"Error deleting image: {e}")
 
-        return Response(data={"message": "Post Deleted Successfully"}, status=status.HTTP_204_NO_CONTENT)
+        return Response(data={"message": "Post Deleted Successfully"},
+                        status=status.HTTP_204_NO_CONTENT)
 
     def get_permissions(self):
         if self.request.method in ['PUT', 'PATCH', 'DELETE']:

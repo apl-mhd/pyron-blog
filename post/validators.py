@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 
 """We can reuse the validators for the image field in the models.py file"""
 
+
 def humanreadable_file_size(bytes):
     return f"{bytes / (1024 * 1024) } MB"
 
